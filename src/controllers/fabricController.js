@@ -18,12 +18,12 @@ const createEntry = async (req, res) => {
 
     const getAllEntries = async (req, res) => {
         try {
-            const { party, year, startDate, endDate, search } = req.query;
-            const entries = await _getAllEntries({ party, year, startDate, endDate, search });
+            const { party, year, startDate, endDate, search, page, limit } = req.query;
+            const result = await _getAllEntries({ party, year, startDate, endDate, search, page, limit });
             res.status(200).json({
                 success: true,
-                count: entries.length,
-                data: entries
+                data: result.entries,
+                pagination: result.pagination
             });
         } catch (error) {
             res.status(500).json({

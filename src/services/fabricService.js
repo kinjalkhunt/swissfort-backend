@@ -61,6 +61,9 @@ export const createEntry = async (entryData) => {
 
 export const getAllEntries = async (filters = {}) => {
     const query = {};
+    const page = parseInt(filters.page) || 1;
+    const limit = parseInt(filters.limit) || 10;
+    const skip = (page - 1) * limit;
 
     if (filters.party) {
         query.party = filters.party;
@@ -81,9 +84,22 @@ export const getAllEntries = async (filters = {}) => {
         ];
     }
 
-    return FabricEntry.find(query)
+    const total = await FabricEntry.countDocuments(query);
+    const entries = await FabricEntry.find(query)
         .populate('party', 'name code mobileNo1')
-        .sort({ createdAt: -1 });
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+
+    return {
+        entries,
+        pagination: {
+            total,
+            page,
+            limit,
+            pages: Math.ceil(total / limit)
+        }
+    };
 };
 
 export const getEntryById = async (id) => {
