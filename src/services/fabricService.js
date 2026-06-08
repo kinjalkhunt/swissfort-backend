@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import FabricEntry from '../models/fabricEntry.js';
 import Party from '../models/party.js';
 
@@ -31,8 +32,10 @@ const calculateEntryAmounts = (entry) => {
 };
 
 export const createEntry = async (entryData) => {
+    console.log('[FabricService] Attempting to create entry for party:', entryData.party);
     const party = await Party.findById(entryData.party);
     if (!party) {
+        console.error('[FabricService] Create Error: Party not found for ID:', entryData.party);
         throw new Error('Party not found');
     }
 
@@ -49,17 +52,20 @@ export const createEntry = async (entryData) => {
             gstNo: party.gstNo,
             address: party.address
         },
-        year: new Date().getFullYear()
+        year: entryData.year || new Date().getFullYear()
     });
 
-    return fabricEntry.save();
-
-    // Populate party details before returning
-    return await FabricEntry.findById(savedEntry._id).populate('party', 'name code mobileNo1');
-
+    const savedEntry = await fabricEntry.save();
+    console.log('[FabricService] Success: Entry saved with ID:', savedEntry._id);
+    
+    // Return the populated document
+    return await FabricEntry.findById(savedEntry._id)
+        .populate('party', 'name code mobileNo1')
+        .lean();
 };
 
 export const getAllEntries = async (filters = {}) => {
+    console.log('[FabricService] Fetching all entries with filters:', JSON.stringify(filters));
     const query = {};
     const page = parseInt(filters.page) || 1;
     const limit = parseInt(filters.limit) || 10;
@@ -112,6 +118,7 @@ export const getEntryById = async (id) => {
 };
 
 export const updateEntry = async (id, updateData) => {
+    console.log('[FabricService] Updating entry:', id);
     if (updateData.entries) {
         const entries = updateData.entries.map(calculateEntryAmounts);
         updateData.entries = entries;
@@ -124,6 +131,7 @@ export const updateEntry = async (id, updateData) => {
     });
 
     if (!entry) {
+        console.error('[FabricService] Update Error: Entry not found:', id);
         throw new Error('Fabric entry not found');
     }
 
@@ -131,11 +139,43 @@ export const updateEntry = async (id, updateData) => {
 };
 
 export const deleteEntry = async (id) => {
+    console.log('[FabricService] Deleting entry:', id);
     const entry = await FabricEntry.findByIdAndDelete(id);
     if (!entry) {
+        console.error('[FabricService] Delete Error: Entry not found:', id);
         throw new Error('Fabric entry not found');
     }
     return entry;
+};
+
+export const deleteEntryFromFabric = async (fabricId, entryId) => {
+    console.log('[FabricService] Deleting entry:', entryId, 'from fabric:', fabricId);
+    
+    const fabricEntry = await FabricEntry.findById(fabricId);
+    if (!fabricEntry) {
+        throw new Error('Fabric entry not found');
+    }
+    
+    // Find and remove the specific entry
+    const entryIndex = fabricEntry.entries.findIndex(
+        entry => entry._id.toString() === entryId
+    );
+    
+    if (entryIndex === -1) {
+        throw new Error('Entry not found in this fabric document');
+    }
+    
+    // Remove the entry
+    fabricEntry.entries.splice(entryIndex, 1);
+    
+    // Recalculate total amount
+    fabricEntry.totalAmount = fabricEntry.entries.reduce(
+        (sum, entry) => sum + (entry.finalAmount || 0), 0
+    );
+    
+    await fabricEntry.save();
+    
+    return fabricEntry;
 };
 
 export const addEntryToFabric = async (id, entryData) => {
@@ -158,5 +198,6 @@ export default {
     getEntryById,
     updateEntry,
     deleteEntry,
-    addEntryToFabric
+    addEntryToFabric,
+    deleteEntryFromFabric
 };  

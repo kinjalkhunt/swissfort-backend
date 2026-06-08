@@ -11,6 +11,7 @@ const registerUser = async (data) => {
     role,
     permissions
   } = data;
+  console.log(`[AuthService] Registering user: ${email} with role: ${role}`);
 
   // CHECK USER
   const exists = await User.findOne({ email });
@@ -25,17 +26,24 @@ const registerUser = async (data) => {
     fabricEntry: false,
     cuttingEntry: false,
     workerEntry: false,
-    stock: false
+    stock: false,
+    partyMaster: false,
+    productMaster: false,
+    workerMaster: false,
+    dashboard: false
   };
 
   // ADMIN FULL ACCESS
   if (role === 'admin') {
-
     finalPermissions = {
       fabricEntry: true,
       cuttingEntry: true,
       workerEntry: true,
-      stock: true
+      stock: true,
+      partyMaster: true,
+      productMaster: true,
+      workerMaster: true,
+      dashboard: true
     };
   }
 
@@ -68,6 +76,7 @@ const registerUser = async (data) => {
 // LOGIN SERVICE
 const loginUser = async (data) => {
 
+  console.log('[AuthService] Login attempt for:', data.email);
   const { email, password } = data;
 
   // FIND USER
@@ -99,6 +108,7 @@ const loginUser = async (data) => {
     );
   }
 
+  console.log('[AuthService] Login successful for:', email);
   return {
     success: true,
 

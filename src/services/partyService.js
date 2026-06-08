@@ -1,6 +1,7 @@
 import Party from '../models/party.js';
 
 const createParty = async (partyData) => {
+    console.log('[PartyService] Creating new party:', partyData.name);
     partyData.year = new Date().getFullYear();
     const party = new Party(partyData);
     return party.save();
@@ -34,6 +35,7 @@ const updateParty = async (id, updateData) => {
 };
 
 const deleteParty = async (id) => {
+    console.log('[PartyService] Deleting party with ID:', id);
     const party = await Party.findByIdAndDelete(id);
     if (!party) throw new Error('Party not found');
     return party;

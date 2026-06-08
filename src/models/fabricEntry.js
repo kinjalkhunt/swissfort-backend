@@ -9,7 +9,8 @@ const fabricEntrySchema = new Schema({
     },
     invoiceNo: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     party: {
         type: Schema.Types.ObjectId,
@@ -31,12 +32,18 @@ const fabricEntrySchema = new Schema({
     entries: [{
         fabricFor: {
             type: String,
-            enum: ['Bottom', 'Top', 'Cordset', 'Other'],
+                enum: ['Bottom', 'Top', 'Cordset', 'Cord Set', 'Other'],
             required: true
         },
         skuNo: {
             type: String,
-            required: true
+            required: true,
+            trim: true
+        },
+        designNo: {
+            type: String,
+            required: true,
+            trim: true
         },
         meter: {
             type: Number,
@@ -92,6 +99,13 @@ const fabricEntrySchema = new Schema({
 }, {
     timestamps: true
 });
+
+// Add logging before validation to catch Enum issues
+// fabricEntrySchema.pre('validate', function(next) {
+//     console.log(`[FabricModel] Validating Invoice: ${this.invoiceNo} for Party: ${this.party}`);
+//     console.log('[FabricModel] Entries to validate:', JSON.stringify(this.entries, null, 2));
+//     next();
+// });
 
 // attach TRN generation hook from utils
 applyGenerateTransactionNo(fabricEntrySchema);
