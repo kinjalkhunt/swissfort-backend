@@ -201,8 +201,7 @@ const login = async (req, res) => {
     res.status(200).json(result);
 
   } catch (error) {
-
-    res.status(401).json({
+      res.status(401).json({
       message: error.message
     });
   }

@@ -12,6 +12,12 @@ const fabricEntrySchema = new Schema({
         required: true,
         trim: true
     },
+    status: {
+        type: String,
+        enum: ['draft', 'completed'],
+        default: 'draft'
+    },
+
     party: {
         type: Schema.Types.ObjectId,
         ref: 'Party',
@@ -32,7 +38,7 @@ const fabricEntrySchema = new Schema({
     entries: [{
         fabricFor: {
             type: String,
-                enum: ['Bottom', 'Top', 'Cordset', 'Cord Set', 'Other'],
+            enum: ['Bottom', 'Top', 'Cordset', 'Cord Set', 'Other'],
             required: true
         },
         skuNo: {
