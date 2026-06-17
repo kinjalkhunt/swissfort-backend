@@ -9,8 +9,9 @@ const fabricEntrySchema = new Schema({
     },
     invoiceNo: {
         type: String,
-        required: true,
-        trim: true
+        required: function () { return this.status === 'completed'; },
+        trim: true,
+        default: 'DRAFT'
     },
     status: {
         type: String,
@@ -21,7 +22,7 @@ const fabricEntrySchema = new Schema({
     party: {
         type: Schema.Types.ObjectId,
         ref: 'Party',
-        required: true
+        required: function () { return this.status === 'completed'; },
     },
     partyDetails: {
         type: Object,
@@ -29,7 +30,8 @@ const fabricEntrySchema = new Schema({
     },
     invoiceDate: {
         type: Date,
-        required: true
+        required: function () { return this.status === 'completed'; }, 
+        default: Date.now
     },
     trnDate: {
         type: Date,

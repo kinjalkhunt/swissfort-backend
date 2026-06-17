@@ -12,11 +12,11 @@ import {
     getFabricEntryByTrnNo,
     getFabricSummary,
     updateLineEntry,
-    // getDraftEntry
+    getDraftEntry
 } from '../controllers/fabricController.js';
 
 router.get('/fabric/next-trn', getNextTrnNo);
-// router.get('/fabric/draft', getDraftEntry);
+router.get('/fabric/draft', getDraftEntry);
 router.get('/fabric/trn/:trnNo', getFabricEntryByTrnNo);
 router.get('/fabric/:id', getFabricEntryById);
 router.get('/fabric', getAllFabricEntries);
