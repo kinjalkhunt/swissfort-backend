@@ -45,8 +45,7 @@ const partySchema = new Schema({
     },
     group: {
         type: String,
-        enum: ['Supplier', 'Sales', 'Purchase'],
-        default: 'Supplier'
+        enum: ['Supplier', 'Sales', 'Purchase']
     }
 }, {
     timestamps: true
@@ -60,6 +59,11 @@ partySchema.pre('validate', async function() {
         const lastNumber = parseInt(lastCode.substring(1), 10) || 0;
         const newNumber = lastNumber + 1;
         this.code = 'P' + newNumber.toString().padStart(4, '0');
+    }
+    if (this.type && !this.group) {
+        this.group = this.type;
+    } else if (this.group && !this.type) {
+        this.type = this.group;
     }
 });
 
