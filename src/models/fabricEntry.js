@@ -30,7 +30,7 @@ const fabricEntrySchema = new Schema({
     },
     invoiceDate: {
         type: Date,
-        required: function () { return this.status === 'completed'; }, 
+        required: function () { return this.status === 'completed'; },
         default: Date.now
     },
     trnDate: {
@@ -41,7 +41,8 @@ const fabricEntrySchema = new Schema({
         fabricFor: {
             type: String,
             enum: ['Bottom', 'Top', 'Cordset', 'Cord Set', 'Other'],
-            required: true
+            required: true,
+            unique: true
         },
         skuNo: {
             type: String,
@@ -58,6 +59,11 @@ const fabricEntrySchema = new Schema({
             required: true,
             min: 0
         },
+        // currentStock: {
+        //     type: Number,
+        //     default: 0,
+        //     min: 0
+        // },
         rate: {
             type: Number,
             required: true,
@@ -94,7 +100,11 @@ const fabricEntrySchema = new Schema({
         finalAmount: {
             type: Number,
             default: 0
-        }
+        },
+        // remainingMtr: {
+        //     type: Number,
+        //     default: 0
+        // },
     }],
     totalAmount: {
         type: Number,
@@ -108,14 +118,20 @@ const fabricEntrySchema = new Schema({
     timestamps: true
 });
 
-// Add logging before validation to catch Enum issues
-// fabricEntrySchema.pre('validate', function(next) {
-//     console.log(`[FabricModel] Validating Invoice: ${this.invoiceNo} for Party: ${this.party}`);
-//     console.log('[FabricModel] Entries to validate:', JSON.stringify(this.entries, null, 2));
-//     next();
-// });
+fabricEntrySchema.pre('save', async function() {
+    for (const entry of this.entries) {
+        // Set initial currentStock to meter value
+        if (!entry.currentStock || entry.currentStock === 0) {
+            entry.currentStock = entry.meter;
+        }
+    }
+});
 
-// attach TRN generation hook from utils
-applyGenerateTransactionNo(fabricEntrySchema);
-
+applyGenerateTransactionNo(fabricEntrySchema, {
+    prefix: 'SF',
+    padding: 5,
+    field: 'trnNo',
+    // Optional: filter by year to reset per year
+    getFilter: (doc) => ({ year: doc.year || new Date().getFullYear() })
+});
 export default model('FabricEntry', fabricEntrySchema);

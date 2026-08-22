@@ -1,52 +1,80 @@
-// backend/utils/generateTransactionNo.js
-// export default function applyGenerateTransactionNo(schema) {
-//     schema.pre('validate', async function() {
-//         if (!this.trnNo) {
-//             try {
-//                 const lastEntry = await this.constructor.findOne({}, {}, { sort: { createdAt: -1 } });
-//                 let lastNumber = 0;
-//                 if (lastEntry && lastEntry.trnNo) {
-//                     const match = lastEntry.trnNo.match(/SF(\d+)/);
-//                     if (match) lastNumber = parseInt(match[1], 10);
-//                 }
-//                 this.trnNo = 'SF' + String(lastNumber + 1).padStart(5, '0');
-//             } catch (error) {
-//                 this.trnNo = 'SF' + Date.now().toString().slice(-5);
-//             }
-//         }
-//     });
-// }
+/**
+ * Generic Transaction Number Generator
+ * @param {Object} options
+ * @param {mongoose.Model} options.model - Mongoose model to query
+ * @param {string} options.prefix - Prefix for TRN (e.g., 'SF', 'CT', 'PO')
+ * @param {number} options.padding - Number of digits (default: 5)
+ * @param {string} options.field - Field name to check (default: 'trnNo')
+ * @param {Object} options.filter - Additional filter for query (e.g., { year: 2026 })
+ * @returns {Promise<string>} - Generated TRN
+ */
+export const generateTrnNo = async ({
+    model,
+    prefix = 'SF',
+    padding = 5,
+    field = 'trnNo',
+    filter = {}
+}) => {
+    const query = {
+        [field]: new RegExp(`^${prefix}`),
+        ...filter
+    };
 
+    const lastEntry = await model
+        .findOne(query)
+        .sort({ [field]: -1 })
+        .select(field)
+        .lean();
+
+    let nextNumber = 1;
+
+    if (lastEntry?.[field]) {
+        const numericPart = lastEntry[field].replace(prefix, '');
+        const lastNumber = parseInt(numericPart, 10);
+        
+        if (!isNaN(lastNumber)) {
+            nextNumber = lastNumber + 1;
+        }
+    }
+
+    return `${prefix}${String(nextNumber).padStart(padding, '0')}`;
+};
 
 /**
- * applyGenerateTransactionNo
- * Mongoose pre-save hook — auto-generates trnNo like SF00001, SF00002 ...
- * Usage: applyGenerateTransactionNo(schema)
+ * Mongoose Pre-save Hook for Auto-Generation
+ * @param {mongoose.Schema} schema - The schema to attach the hook to
+ * @param {Object} options
+ * @param {string} options.prefix - Prefix for TRN (e.g., 'SF', 'CT')
+ * @param {number} options.padding - Number of digits (default: 5)
+ * @param {string} options.field - Field name (default: 'trnNo')
+ * @param {Function} options.getFilter - Optional function to get additional filter
  */
-const applyGenerateTransactionNo = (schema) => {
-    schema.pre('validate', async function () {  // ✅ changed here
-        if (!this.isNew) return  // only on create
+export const applyGenerateTransactionNo = (schema, options = {}) => {
+    const {
+        prefix = 'SF',
+        padding = 5,
+        field = 'trnNo',
+        getFilter = null
+    } = options;
 
-        try {
-            const Model  = this.constructor;
-            const prefix = 'SF';
-
-            const last = await Model
-                .findOne({ trnNo: new RegExp(`^${prefix}`) })
-                .sort({ trnNo: -1 })
-                .select('trnNo');
-
-            let nextNum = 1;
-            if (last?.trnNo) {
-                const num = parseInt(last.trnNo.replace(prefix, ''), 10);
-                if (!isNaN(num)) nextNum = num + 1;
-            }
-
-            this.trnNo = `${prefix}${String(nextNum).padStart(5, '0')}`;
-        } catch (err) {
-            next(err);
+    schema.pre('validate', async function () {
+        // Skip if document is not new OR field already has a value
+        if (!this.isNew || this[field]) {
+            return;
         }
+
+        const Model = this.constructor;
+        const filter = getFilter ? getFilter(this) : {};
+
+        this[field] = await generateTrnNo({
+            model: Model,
+            prefix,
+            padding,
+            field,
+            filter
+        });
     });
 };
 
+// Default export for backward compatibility
 export default applyGenerateTransactionNo;

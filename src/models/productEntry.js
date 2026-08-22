@@ -33,7 +33,7 @@ const productSchema = new Schema(
 // Auto-generate Product Code
 // PR0001, PR0002, PR0003...
 // ============================================
-productSchema.pre('save', async function (next) {
+productSchema.pre('save', async function () {
     if (this.isNew && !this.productCode) {
         try {
             // Find latest product
@@ -59,7 +59,7 @@ productSchema.pre('save', async function (next) {
             this.productCode = `PR${String(nextNumber).padStart(4, '0')}`;
 
         } catch (error) {
-            return next(error);
+            throw error;
         }
     }
 
@@ -68,7 +68,6 @@ productSchema.pre('save', async function (next) {
 // ============================================
 // Indexes
 // ============================================
-productSchema.index({ productCode: 1 });
 productSchema.index({ productType: 1 });
 
 // ============================================
