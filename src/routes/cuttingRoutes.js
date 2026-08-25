@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createCuttingEntry, deleteCuttingEntry, getAllCuttingEntries, getCuttingEntryById, getNextTrnNo, getProductById, getProducts, getSkuDetails, getSkuStockHistory, updateCuttingEntry } from "../controllers/cuttingEntryController.js";
+import { completeCuttingTrn, createCuttingEntry, deleteCuttingEntry, getAllCuttingEntries, getCuttingEntryById, getNextTrnNo, getProductById, getProducts, getSkuDetails, getSkuStockHistory, updateCuttingEntry } from "../controllers/cuttingEntryController.js";
 
 const router = Router()
 
@@ -25,11 +25,14 @@ router.get('/sku-history/:skuNo', getSkuStockHistory);
 // Get all
 router.get( '/',getAllCuttingEntries);
 
-// Get single
-router.get('/:id',getCuttingEntryById );
-
 // Create
 router.post('/',createCuttingEntry);
+
+// Complete all draft rows belonging to one TRN
+router.patch('/trn/:trnNo/complete', completeCuttingTrn);
+
+// Get single
+router.get('/:id',getCuttingEntryById );
 
 // Update
 router.put('/:id',updateCuttingEntry);

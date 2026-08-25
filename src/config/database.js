@@ -20,6 +20,11 @@ const connectDB = async () => {
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
     console.log(`📊 Database: ${conn.connection.name}`);
 
+    const cuttingEntryModel = mongoose.models.CuttingEntry;
+    if (cuttingEntryModel) {
+      await cuttingEntryModel.syncIndexes();
+    }
+
   } catch (error) {
 
     console.error("❌ FULL ERROR:");

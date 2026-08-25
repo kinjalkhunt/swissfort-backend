@@ -59,11 +59,11 @@ const fabricEntrySchema = new Schema({
             required: true,
             min: 0
         },
-        // currentStock: {
-        //     type: Number,
-        //     default: 0,
-        //     min: 0
-        // },
+        currentStock: {
+            type: Number,
+            default: function () { return this.meter; },
+            min: 0
+        },
         rate: {
             type: Number,
             required: true,
@@ -120,10 +120,16 @@ const fabricEntrySchema = new Schema({
 
 fabricEntrySchema.pre('save', async function() {
     for (const entry of this.entries) {
-        // Set initial currentStock to meter value
-        if (!entry.currentStock || entry.currentStock === 0) {
+        if (entry.currentStock === undefined || entry.currentStock === null) {
             entry.currentStock = entry.meter;
         }
+    }
+});
+
+fabricEntrySchema.pre('validate', function () {
+    const skuNumbers = this.entries.map((entry) => entry.skuNo).filter(Boolean);
+    if (new Set(skuNumbers).size !== skuNumbers.length) {
+        throw new Error('Duplicate SKU numbers are not allowed in a fabric entry');
     }
 });
 

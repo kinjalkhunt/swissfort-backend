@@ -25,6 +25,25 @@ export const getNextTrnNoService = async () => {
     };
 };
 
+const validateUniqueSkus = async (entries, excludedId = null) => {
+    const skuNumbers = entries.map((entry) => entry.skuNo).filter(Boolean);
+    if (new Set(skuNumbers).size !== skuNumbers.length) {
+        const err = new Error('Duplicate SKU numbers are not allowed in a fabric entry.');
+        err.statusCode = 400;
+        throw err;
+    }
+
+    for (const skuNo of skuNumbers) {
+        const query = { 'entries.skuNo': skuNo };
+        if (excludedId) query._id = { $ne: excludedId };
+        if (await FabricEntry.exists(query)) {
+            const err = new Error(`SKU No "${skuNo}" already exists in Fabric Entry.`);
+            err.statusCode = 400;
+            throw err;
+        }
+    }
+};
+
 
 // ─────────────────────────────────────────────
 // Create new fabric entry
@@ -53,6 +72,8 @@ export const createFabricEntryService = async (body) => {
         err.statusCode = 404;
         throw err;
     }
+
+    await validateUniqueSkus(entries);
 
     const calculatedEntries = entries.map(calcEntry);
     const totalAmount = calcTotal(calculatedEntries);
@@ -206,6 +227,7 @@ export const updateFabricEntryService = async (id, body) => {
     }
 
     if (entries?.length) {
+        await validateUniqueSkus(entries, fabric._id);
         fabric.entries = entries.map(calcEntry);
         fabric.totalAmount = calcTotal(fabric.entries);
     }

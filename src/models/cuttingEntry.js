@@ -219,7 +219,6 @@ const cuttingEntrySchema = new Schema(
         trnNo: {
             type: String,
             required: true,
-            unique: true,
             trim: true,
         },
 
