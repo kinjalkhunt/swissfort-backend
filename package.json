@@ -8,7 +8,8 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "merge-cutting-transactions": "node scripts/mergeCuttingTransactions.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
