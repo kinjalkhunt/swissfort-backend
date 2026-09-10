@@ -1,4 +1,4 @@
-const roleCheck = (...roles) => {
+export const roleCheck = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ message: 'User not found' });
@@ -14,7 +14,7 @@ const roleCheck = (...roles) => {
 };
 
 // Helper permission check
-const checkHelperPermission = (permission) => {
+export const checkHelperPermission = (permission) => {
   return (req, res, next) => {
 
     // Admin has full access
@@ -33,4 +33,4 @@ const checkHelperPermission = (permission) => {
   };
 };
 
-export default { roleCheck, checkHelperPermission };
+// export default { roleCheck, checkHelperPermission };

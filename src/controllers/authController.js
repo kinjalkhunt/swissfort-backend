@@ -227,6 +227,48 @@ const getMe = async (req, res) => {
   }
 };
 
+// GET PROFILE (for profile page)
+const getProfile = async (req, res) => {
+
+  try {
+
+    const result =
+      await authServices.getUserProfile(
+        req.user._id
+      );
+
+    res.status(200).json(result);
+
+  } catch (error) {
+
+    res.status(404).json({
+      message: error.message
+    });
+  }
+};
+
+// UPDATE PROFILE
+const updateProfile = async (req, res) => {
+
+  try {
+
+    const result =
+      await authServices.updateProfile(
+        req.user._id,
+        req.body
+      );
+
+    res.status(200).json(result);
+
+  } catch (error) {
+
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 // UPDATE PERMISSIONS
 const updatePermissions = async (
   req,
@@ -289,11 +331,92 @@ const deleteUser = async (req, res) => {
   }
 };
 
+// FORGOT PASSWORD
+const forgotPassword = async (req, res) => {
+
+  try {
+
+    const { email } = req.body;
+
+    if (!email) {
+
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    const result =
+      await authServices.forgotPassword(
+        email
+      );
+
+    res.status(200).json(result);
+
+  } catch (error) {
+
+    res.status(404).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// RESET PASSWORD
+const resetPassword = async (req, res) => {
+
+  try {
+
+    const { resetToken, password } = req.body;
+
+    if (!resetToken || !password) {
+
+      return res.status(400).json({
+        success: false,
+        message: 'Reset token and password are required'
+      });
+    }
+
+    const result =
+      await authServices.resetPassword(
+        resetToken,
+        password
+      );
+
+    res.status(200).json(result);
+
+  } catch (error) {
+
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// WORKER LOGIN
+const workerLogin = async (req, res) => {
+  try {
+    const result = await authServices.loginWorker(req.body);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(401).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 export default {
   register,
   login,
+  workerLogin,
   getMe,
+  getProfile,
+  updateProfile,
   updatePermissions,
+  forgotPassword,
+  resetPassword,
   getAllUsers,
   deleteUser
 };

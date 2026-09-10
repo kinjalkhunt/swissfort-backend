@@ -60,8 +60,13 @@ const userSchema = new Schema({
 
   role: {
     type: String,
-    enum: ['admin', 'master'],
+    enum: ['admin', 'master', 'worker'],
     default: 'master'
+  },
+
+  workerId: {
+    type: String,
+    default: null
   },
 
   permissions: {
@@ -72,6 +77,26 @@ const userSchema = new Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+
+  lastLogin: {
+    type: Date,
+    default: null
+  },
+
+  lastPasswordChange: {
+    type: Date,
+    default: null
+  },
+
+  passwordResetToken: {
+    type: String,
+    default: null
+  },
+
+  passwordResetTokenExpiry: {
+    type: Date,
+    default: null
   }
 
 }, {
@@ -80,15 +105,16 @@ const userSchema = new Schema({
 
 
 // HASH PASSWORD
-userSchema.pre('save', async function () {
-
+userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {
-    return;
+    return 
+    // next();
   }
 
   const salt = await bcrypt.genSalt(10);
-
   this.password = await bcrypt.hash(this.password, salt);
+
+  // next();
 });
 
 
