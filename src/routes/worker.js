@@ -3,51 +3,36 @@ import workerController from '../controllers/workerController.js';
 import authMiddleware from '../middleware/auth.js';
 import upload from '../middleware/upload.js';
 import { checkHelperPermission } from '../middleware/roleCheck.js';
-import workerAuth from '../middleware/workerAuth.js';
 
 const { protect } = authMiddleware;
-const { createWorker, getAllWorkers, getWorkerById, updateWorker, deleteWorker } = workerController;
+const {
+  getNextWorkerId,
+  createWorker,
+  getAllWorkers,
+  getWorkerById,
+  updateWorker,
+  deleteWorker
+} = workerController;
 
 const router = Router();
 
-// Create worker (protected, requires workerEntry permission)
-router.post('/create',protect,checkHelperPermission('workerEntry'),upload.single('proofImage'),createWorker);
+const uploadProof = (req, res, next) => {
+  upload.single('proofImage')(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    next();
+  });
+};
 
-// Get all workers (protected, requires workerEntry permission)
-router.get(
-  '/',
-  protect,
-  workerAuth,
-  checkHelperPermission('workerEntry'),
-  getAllWorkers
-);
+router.use(protect, checkHelperPermission('workerMaster'));
 
-// Get worker by ID (protected, requires workerEntry permission)
-router.get(
-  '/:workerId',
-  protect,
-  workerAuth,
-  checkHelperPermission('workerEntry'),
-  getWorkerById
-);
-
-// Update worker (protected, requires workerEntry permission)
-router.put(
-  '/:workerId',
-  protect,
-  workerAuth,
-  checkHelperPermission('workerEntry'),
-  upload.single('proofImage'),
-  updateWorker
-);
-
-// Delete worker (protected, requires workerEntry permission)
-router.delete(
-  '/:workerId',
-  protect,
-  workerAuth,
-  checkHelperPermission('workerEntry'),
-  deleteWorker
-);
+router.get('/next-id', getNextWorkerId);
+router.post('/', uploadProof, createWorker);
+router.post('/create', uploadProof, createWorker);
+router.get('/', getAllWorkers);
+router.get('/:workerId', getWorkerById);
+router.put('/:workerId', uploadProof, updateWorker);
+router.delete('/:workerId', deleteWorker);
 
 export default router;
