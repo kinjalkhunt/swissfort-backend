@@ -51,8 +51,8 @@ const registerUser = async (data) => {
     };
   }
 
-  // MASTER CUSTOM ACCESS
-  if (role === 'master') {
+  // MASTER / WORKER CUSTOM ACCESS
+  if (role === 'master' || role === 'worker') {
 
     finalPermissions =
       permissions || finalPermissions;
@@ -164,10 +164,10 @@ const updateUserPermissions = async (
     throw new Error('User not found');
   }
 
-  if (user.role !== 'master') {
+  if (!['master', 'worker'].includes(user.role)) {
 
     throw new Error(
-      'Permissions only for master'
+      'Permissions only for master or worker'
     );
   }
 

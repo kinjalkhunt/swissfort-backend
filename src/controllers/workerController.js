@@ -1,110 +1,101 @@
+import fs from 'fs/promises';
 import workerServices from '../services/workerServices.js';
+
+const sendError = (res, error) => {
+  let statusCode = error.statusCode || 500;
+  let message = error.message;
+
+  if (error.name === 'ValidationError') {
+    statusCode = 400;
+    message = Object.values(error.errors)[0]?.message || message;
+  }
+
+  if (error.code === 11000) {
+    statusCode = 409;
+    message = `Worker with this ${Object.keys(error.keyValue || {})[0] || 'value'} already exists`;
+  }
+
+  res.status(statusCode).json({ success: false, message });
+};
+
+const discardUpload = async (req) => {
+  if (!req.file) return;
+  try {
+    await fs.unlink(req.file.path);
+  } catch {
+    // ignore
+  }
+};
+
+const withProof = (req) => ({
+  ...req.body,
+  ...(req.file && { proofImage: req.file.path.replace(/\\/g, '/') })
+});
+
+// GET NEXT WORKER ID
+const getNextWorkerId = async (req, res) => {
+  try {
+    const result = await workerServices.getNextWorkerId(req.user);
+    res.status(200).json(result);
+  } catch (error) {
+    sendError(res, error);
+  }
+};
 
 // CREATE WORKER
 const createWorker = async (req, res) => {
   try {
-    const data = {
-      ...req.body,
-      proofImage: req.file ? req.file.path : req.body.proofImage
-    };
-
-    const result = await workerServices.createWorker(data);
+    const result = await workerServices.createWorker(withProof(req), req.user);
     res.status(201).json(result);
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+    await discardUpload(req);
+    sendError(res, error);
   }
 };
 
 // GET ALL WORKERS
 const getAllWorkers = async (req, res) => {
   try {
-    const filters = {
-      page: req.query.page,
-      limit: req.query.limit,
-      workerDetails: req.query.workerDetails,
-      search: req.query.search,
-      workerId: req.workerId // Filter by logged-in worker's ID
-    };
-
-    const result = await workerServices.getAllWorkers(filters);
+    const result = await workerServices.getAllWorkers(req.query, req.user);
     res.status(200).json(result);
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    sendError(res, error);
   }
 };
 
 // GET WORKER BY ID
 const getWorkerById = async (req, res) => {
   try {
-    const { workerId } = req.params;
-    
-    // If logged-in user is worker, only allow access to their own data
-    if (req.workerId && req.workerId !== workerId) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. You can only view your own data.'
-      });
-    }
-    
-    const result = await workerServices.getWorkerById(workerId);
+    const result = await workerServices.getWorkerById(req.params.workerId, req.user);
     res.status(200).json(result);
   } catch (error) {
-    res.status(404).json({
-      success: false,
-      message: error.message
-    });
+    sendError(res, error);
   }
 };
 
 // UPDATE WORKER
 const updateWorker = async (req, res) => {
   try {
-    const { workerId } = req.params;
-    
-    // If logged-in user is worker, only allow access to their own data
-    if (req.workerId && req.workerId !== workerId) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. You can only update your own data.'
-      });
-    }
-    
-    const data = {
-      ...req.body,
-      proofImage: req.file ? req.file.path : req.body.proofImage
-    };
-
-    const result = await workerServices.updateWorker(workerId, data);
+    const result = await workerServices.updateWorker(req.params.workerId, withProof(req), req.user);
     res.status(200).json(result);
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+    await discardUpload(req);
+    sendError(res, error);
   }
 };
 
 // DELETE WORKER
 const deleteWorker = async (req, res) => {
   try {
-    const { workerId } = req.params;
-    const result = await workerServices.deleteWorker(workerId);
+    const result = await workerServices.deleteWorker(req.params.workerId, req.user);
     res.status(200).json(result);
   } catch (error) {
-    res.status(404).json({
-      success: false,
-      message: error.message
-    });
+    sendError(res, error);
   }
 };
 
 export default {
+  getNextWorkerId,
   createWorker,
   getAllWorkers,
   getWorkerById,

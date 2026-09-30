@@ -1,5 +1,7 @@
 import { Schema, model } from 'mongoose';
 
+export const MOBILE_REGEX = /^[6-9][0-9]{9}$/;
+
 const workerSchema = new Schema(
   {
     workerId: {
@@ -15,42 +17,47 @@ const workerSchema = new Schema(
     mobile1: {
       type: String,
       required: [true, 'Mobile 1 required'],
-      match: [/^[0-9]{10}$/, 'Mobile 1 must be 10 digits'],
+      unique: true,
+      trim: true,
+      match: [MOBILE_REGEX, 'Mobile 1 must be a valid 10 digit mobile number'],
     },
     mobile2: {
       type: String,
       default: '',
+      trim: true,
       validate: {
         validator: function (v) {
-          return !v || /^[0-9]{10}$/.test(v);
+          return !v || MOBILE_REGEX.test(v);
         },
-        message: 'Mobile 2 must be 10 digits',
+        message: 'Mobile 2 must be a valid 10 digit mobile number',
       },
     },
     address: {
       type: String,
       required: [true, 'Address required'],
+      trim: true,
     },
     workerDetails: {
       type: String,
-      enum: ['cutting', 'stitching'],
-      required: true,
+      enum: {
+        values: ['cutting', 'stitching'],
+        message: 'Work details must be cutting or stitching',
+      },
+      lowercase: true,
+      trim: true,
+      required: [true, 'Work details required'],
     },
     proofImage: {
-      type: String, // file path
+      type: String,
       required: [true, 'Proof image required'],
+    },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
     },
   },
   { timestamps: true }
 );
-
-workerSchema.statics.generateWorkerId = async function () {
-  const lastWorker = await this.findOne().sort({ createdAt: -1 });
-  if (!lastWorker) return 'W001';
-
-  const lastNum = parseInt(lastWorker.workerId.replace('W', ''), 10);
-  const nextNum = lastNum + 1;
-  return 'W' + String(nextNum).padStart(3, '0');
-};
 
 export default model('Worker', workerSchema);
