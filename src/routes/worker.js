@@ -13,6 +13,9 @@ const router = Router();
 // Create a worker profile or, for admins, create a worker account and profile.
 router.post('/create', protect, checkHelperPermission('workerMaster'), upload.single('proofImage'), createWorker);
 
+// Export workers using the same access rules and filters as the worker list.
+router.get('/export', protect, workerAuth, checkHelperPermission('workerMaster'), workerController.exportWorkers);
+
 // Get all workers (protected, requires workerEntry permission)
 router.get(
   '/',

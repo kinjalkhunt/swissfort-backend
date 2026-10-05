@@ -1,9 +1,12 @@
 import multer, { diskStorage } from 'multer';
 import { extname } from 'path';
+import { fileURLToPath } from 'node:url';
+
+const uploadDirectory = fileURLToPath(new URL('../../uploads/', import.meta.url));
 
 const storage = diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/');
+    cb(null, uploadDirectory);
   },
   filename: (req, file, cb) => {
     const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1e9);

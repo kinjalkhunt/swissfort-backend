@@ -1,5 +1,33 @@
 import Worker from '../models/worker.js';
 import User from '../models/User.js';
+import json2csv from 'json2csv';
+
+const { Parser } = json2csv;
+
+const buildWorkerQuery = (filters = {}, user) => {
+  const { workerDetails, search } = filters;
+  const conditions = [];
+
+  if (user.role === 'worker') {
+    conditions.push({
+      $or: [{ userId: user._id }, ...(user.workerId ? [{ workerId: user.workerId }] : [])]
+    });
+  }
+
+  if (workerDetails) {
+    conditions.push({ workerDetails });
+  }
+
+  if (search) {
+    conditions.push({ $or: [
+      { name: { $regex: search, $options: 'i' } },
+      { workerId: { $regex: search, $options: 'i' } },
+      { mobile1: { $regex: search, $options: 'i' } }
+    ] });
+  }
+
+  return conditions.length ? { $and: conditions } : {};
+};
 
 // CREATE WORKER
 const createWorker = async (user, data) => {
@@ -75,29 +103,8 @@ const createWorker = async (user, data) => {
 
 // GET ALL WORKERS
 const getAllWorkers = async (filters = {}, user) => {
-  const { page = 1, limit = 10, workerDetails, search } = filters;
-
-  const conditions = [];
-
-  if (user.role === 'worker') {
-    conditions.push({
-      $or: [{ userId: user._id }, ...(user.workerId ? [{ workerId: user.workerId }] : [])]
-    });
-  }
-
-  if (workerDetails) {
-    conditions.push({ workerDetails });
-  }
-
-  if (search) {
-    conditions.push({ $or: [
-      { name: { $regex: search, $options: 'i' } },
-      { workerId: { $regex: search, $options: 'i' } },
-      { mobile1: { $regex: search, $options: 'i' } }
-    ] });
-  }
-
-  const query = conditions.length ? { $and: conditions } : {};
+  const { page = 1, limit = 10 } = filters;
+  const query = buildWorkerQuery(filters, user);
 
   const workers = await Worker.find(query)
     .sort({ createdAt: -1 })
@@ -116,6 +123,22 @@ const getAllWorkers = async (filters = {}, user) => {
       pages: Math.ceil(total / limit)
     }
   };
+};
+
+// EXPORT WORKERS
+const exportWorkersToCSV = async (filters = {}, user) => {
+  const workers = await Worker.find(buildWorkerQuery(filters, user)).sort({ createdAt: -1 });
+  const fields = [
+    { label: 'Worker ID', value: 'workerId' },
+    { label: 'Name', value: 'name' },
+    { label: 'Mobile 1', value: 'mobile1' },
+    { label: 'Mobile 2', value: 'mobile2' },
+    { label: 'Address', value: 'address' },
+    { label: 'Worker Details', value: 'workerDetails' },
+    { label: 'Proof Image', value: 'proofImage' }
+  ];
+
+  return new Parser({ fields }).parse(workers);
 };
 
 // GET WORKER BY ID
@@ -196,6 +219,7 @@ const deleteWorker = async (workerId, user) => {
 export default {
   createWorker,
   getAllWorkers,
+  exportWorkersToCSV,
   getWorkerById,
   updateWorker,
   deleteWorker

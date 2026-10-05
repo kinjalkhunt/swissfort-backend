@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import express from 'express';
 import cors from 'cors';
+import { fileURLToPath } from 'node:url';
 import connectDB from './src/config/database.js';
 import indexRouter from './src/routes/index.js';
 
@@ -20,6 +21,7 @@ app.use(cors({
 }));app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use('/uploads', express.static(fileURLToPath(new URL('./uploads/', import.meta.url))));
 
 app.use('/v1',indexRouter);
 
