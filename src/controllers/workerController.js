@@ -8,7 +8,7 @@ const createWorker = async (req, res) => {
       proofImage: req.file ? req.file.path : req.body.proofImage
     };
 
-    const result = await workerServices.createWorker(data);
+    const result = await workerServices.createWorker(req.user, data);
     res.status(201).json(result);
   } catch (error) {
     res.status(400).json({
@@ -26,10 +26,9 @@ const getAllWorkers = async (req, res) => {
       limit: req.query.limit,
       workerDetails: req.query.workerDetails,
       search: req.query.search,
-      workerId: req.workerId // Filter by logged-in worker's ID
     };
 
-    const result = await workerServices.getAllWorkers(filters);
+    const result = await workerServices.getAllWorkers(filters, req.user);
     res.status(200).json(result);
   } catch (error) {
     res.status(500).json({
@@ -44,18 +43,10 @@ const getWorkerById = async (req, res) => {
   try {
     const { workerId } = req.params;
     
-    // If logged-in user is worker, only allow access to their own data
-    if (req.workerId && req.workerId !== workerId) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. You can only view your own data.'
-      });
-    }
-    
-    const result = await workerServices.getWorkerById(workerId);
+    const result = await workerServices.getWorkerById(workerId, req.user);
     res.status(200).json(result);
   } catch (error) {
-    res.status(404).json({
+    res.status(error.message.startsWith('Access denied') ? 403 : 404).json({
       success: false,
       message: error.message
     });
@@ -67,20 +58,12 @@ const updateWorker = async (req, res) => {
   try {
     const { workerId } = req.params;
     
-    // If logged-in user is worker, only allow access to their own data
-    if (req.workerId && req.workerId !== workerId) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. You can only update your own data.'
-      });
-    }
-    
     const data = {
       ...req.body,
       proofImage: req.file ? req.file.path : req.body.proofImage
     };
 
-    const result = await workerServices.updateWorker(workerId, data);
+    const result = await workerServices.updateWorker(workerId, data, req.user);
     res.status(200).json(result);
   } catch (error) {
     res.status(400).json({
@@ -94,7 +77,7 @@ const updateWorker = async (req, res) => {
 const deleteWorker = async (req, res) => {
   try {
     const { workerId } = req.params;
-    const result = await workerServices.deleteWorker(workerId);
+    const result = await workerServices.deleteWorker(workerId, req.user);
     res.status(200).json(result);
   } catch (error) {
     res.status(404).json({

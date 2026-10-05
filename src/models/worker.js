@@ -10,7 +10,7 @@ const workerSchema = new Schema(
     name: {
       type: String,
       required: [true, 'Worker name required'],
-      trim: true,
+      // trim: true,
     },
     mobile1: {
       type: String,
@@ -37,20 +37,34 @@ const workerSchema = new Schema(
       required: true,
     },
     proofImage: {
-      type: String, // file path
+      type: String,
       required: [true, 'Proof image required'],
     },
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
+    },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
+    }
   },
   { timestamps: true }
 );
 
 workerSchema.statics.generateWorkerId = async function () {
-  const lastWorker = await this.findOne().sort({ createdAt: -1 });
-  if (!lastWorker) return 'W001';
+  const [lastWorker] = await this.aggregate([
+    { $match: { workerId: /^W[0-9]+$/ } },
+    { $project: { workerNumber: { $toInt: { $substr: ['$workerId', 1, -1] } } } },
+    { $sort: { workerNumber: -1 } },
+    { $limit: 1 }
+  ]);
+  if (!lastWorker) return 'W0001';
 
-  const lastNum = parseInt(lastWorker.workerId.replace('W', ''), 10);
-  const nextNum = lastNum + 1;
-  return 'W' + String(nextNum).padStart(3, '0');
+  const nextNum = lastWorker.workerNumber + 1;
+  return 'W' + String(nextNum).padStart(4, '0');
 };
 
 export default model('Worker', workerSchema);

@@ -58,6 +58,12 @@ const registerUser = async (data) => {
       permissions || finalPermissions;
   }
 
+   if (role === 'worker') {
+
+    finalPermissions =
+      permissions || finalPermissions;
+  }
+
   // CREATE USER
   const user = await User.create({
     name,
@@ -164,12 +170,9 @@ const updateUserPermissions = async (
     throw new Error('User not found');
   }
 
-  if (user.role !== 'master') {
-
-    throw new Error(
-      'Permissions only for master'
-    );
-  }
+ if (user.role !== 'master' && user.role !== 'worker') {
+  throw new Error('Permissions only for master or worker');
+}
 
   user.permissions = permissions;
 

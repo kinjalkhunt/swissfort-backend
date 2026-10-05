@@ -10,15 +10,15 @@ const { createWorker, getAllWorkers, getWorkerById, updateWorker, deleteWorker }
 
 const router = Router();
 
-// Create worker (protected, requires workerEntry permission)
-router.post('/create',protect,checkHelperPermission('workerEntry'),upload.single('proofImage'),createWorker);
+// Create a worker profile or, for admins, create a worker account and profile.
+router.post('/create', protect, checkHelperPermission('workerMaster'), upload.single('proofImage'), createWorker);
 
 // Get all workers (protected, requires workerEntry permission)
 router.get(
   '/',
   protect,
   workerAuth,
-  checkHelperPermission('workerEntry'),
+  checkHelperPermission('workerMaster'),
   getAllWorkers
 );
 
@@ -27,7 +27,7 @@ router.get(
   '/:workerId',
   protect,
   workerAuth,
-  checkHelperPermission('workerEntry'),
+  checkHelperPermission('workerMaster'),
   getWorkerById
 );
 
@@ -36,7 +36,7 @@ router.put(
   '/:workerId',
   protect,
   workerAuth,
-  checkHelperPermission('workerEntry'),
+  checkHelperPermission('workerMaster'),
   upload.single('proofImage'),
   updateWorker
 );
@@ -46,7 +46,7 @@ router.delete(
   '/:workerId',
   protect,
   workerAuth,
-  checkHelperPermission('workerEntry'),
+  checkHelperPermission('workerMaster'),
   deleteWorker
 );
 

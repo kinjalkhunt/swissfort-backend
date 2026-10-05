@@ -1,19 +1,44 @@
 import Worker from '../models/worker.js';
 import User from '../models/User.js';
-import generateToken from '../utils/generateToken.js';
 
 // CREATE WORKER
-const createWorker = async (data) => {
+const createWorker = async (user, data) => {
   const { name, mobile1, mobile2, address, workerDetails, proofImage, password } = data;
 
-  // Check if mobile1 already exists
   const existingWorker = await Worker.findOne({ mobile1 });
   if (existingWorker) {
     throw new Error('Worker with this mobile number already exists');
   }
 
-  // Generate worker ID
+  if (user.role === 'worker') {
+    const existingProfile = await Worker.findOne({
+      $or: [{ userId: user._id }, ...(user.workerId ? [{ workerId: user.workerId }] : [])]
+    });
+    if (existingProfile) {
+      throw new Error('Worker profile already exists');
+    }
+  } else if (user.role !== 'admin') {
+    throw new Error('Only workers can create their own profile');
+  }
+
   const workerId = await Worker.generateWorkerId();
+  let linkedUser = user;
+
+  if (user.role === 'admin') {
+    const userEmail = `${mobile1}@swissfort.local`;
+    if (await User.findOne({ email: userEmail })) {
+      throw new Error('A user account with this mobile number already exists');
+    }
+
+    linkedUser = await User.create({
+      name,
+      email: userEmail,
+      password: password || mobile1,
+      role: 'worker',
+      workerId,
+      permissions: {}
+    });
+  }
 
   const worker = await Worker.create({
     workerId,
@@ -22,68 +47,57 @@ const createWorker = async (data) => {
     mobile2: mobile2 || '',
     address,
     workerDetails,
-    proofImage
+    proofImage,
+    userId: linkedUser._id,
+    createdBy: user._id
   });
 
-  // Create user account for worker
-  const defaultPassword = password || mobile1; // Default password is mobile number if not provided
-  const userEmail = `${mobile1}@swissfort.local`; // Generate email from mobile number
-
-  const user = await User.create({
-    name,
-    email: userEmail,
-    password: defaultPassword,
-    role: 'worker',
-    workerId: workerId,
-    permissions: {
-      fabricEntry: false,
-      cuttingEntry: false,
-      workerEntry: false,
-      stock: false,
-      partyMaster: false,
-      productMaster: false,
-      workerMaster: false,
-      dashboard: false
-    }
-  });
+  linkedUser.workerId = workerId;
+  linkedUser.name = name;
+  await linkedUser.save();
 
   return {
     success: true,
-    message: 'Worker created successfully with user account',
+    message: user.role === 'admin' ? 'Worker created successfully with user account' : 'Worker profile created successfully',
     worker,
-    user: {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      workerId: user.workerId,
-      defaultPassword: defaultPassword
-    }
+    ...(user.role === 'admin' && {
+      user: {
+        _id: linkedUser._id,
+        name: linkedUser.name,
+        email: linkedUser.email,
+        role: linkedUser.role,
+        workerId: linkedUser.workerId,
+        defaultPassword: password || mobile1
+      }
+    })
   };
 };
 
 // GET ALL WORKERS
-const getAllWorkers = async (filters = {}) => {
-  const { page = 1, limit = 10, workerDetails, search, workerId } = filters;
+const getAllWorkers = async (filters = {}, user) => {
+  const { page = 1, limit = 10, workerDetails, search } = filters;
 
-  let query = {};
+  const conditions = [];
 
-  // If workerId is provided (logged-in worker), filter to only their data
-  if (workerId) {
-    query.workerId = workerId;
+  if (user.role === 'worker') {
+    conditions.push({
+      $or: [{ userId: user._id }, ...(user.workerId ? [{ workerId: user.workerId }] : [])]
+    });
   }
 
   if (workerDetails) {
-    query.workerDetails = workerDetails;
+    conditions.push({ workerDetails });
   }
 
   if (search) {
-    query.$or = [
+    conditions.push({ $or: [
       { name: { $regex: search, $options: 'i' } },
       { workerId: { $regex: search, $options: 'i' } },
       { mobile1: { $regex: search, $options: 'i' } }
-    ];
+    ] });
   }
+
+  const query = conditions.length ? { $and: conditions } : {};
 
   const workers = await Worker.find(query)
     .sort({ createdAt: -1 })
@@ -105,8 +119,12 @@ const getAllWorkers = async (filters = {}) => {
 };
 
 // GET WORKER BY ID
-const getWorkerById = async (workerId) => {
-  const worker = await Worker.findOne({ workerId });
+const getWorkerById = async (workerId, user) => {
+  const query = { workerId };
+  if (user.role === 'worker') {
+    query.$or = [{ userId: user._id }, ...(user.workerId ? [{ workerId: user.workerId }] : [])];
+  }
+  const worker = await Worker.findOne(query);
 
   if (!worker) {
     throw new Error('Worker not found');
@@ -119,8 +137,12 @@ const getWorkerById = async (workerId) => {
 };
 
 // UPDATE WORKER
-const updateWorker = async (workerId, data) => {
-  const worker = await Worker.findOne({ workerId });
+const updateWorker = async (workerId, data, user) => {
+  const query = { workerId };
+  if (user.role === 'worker') {
+    query.$or = [{ userId: user._id }, ...(user.workerId ? [{ workerId: user.workerId }] : [])];
+  }
+  const worker = await Worker.findOne(query);
 
   if (!worker) {
     throw new Error('Worker not found');
@@ -134,7 +156,8 @@ const updateWorker = async (workerId, data) => {
     }
   }
 
-  Object.assign(worker, data);
+  const { workerId: ignoredWorkerId, userId: ignoredUserId, createdBy: ignoredCreatedBy, ...updates } = data;
+  Object.assign(worker, updates);
   await worker.save();
 
   return {
@@ -145,14 +168,24 @@ const updateWorker = async (workerId, data) => {
 };
 
 // DELETE WORKER
-const deleteWorker = async (workerId) => {
-  const worker = await Worker.findOne({ workerId });
+const deleteWorker = async (workerId, user) => {
+  const query = { workerId };
+  if (user.role === 'worker') {
+    query.$or = [{ userId: user._id }, ...(user.workerId ? [{ workerId: user.workerId }] : [])];
+  }
+  const worker = await Worker.findOne(query);
 
   if (!worker) {
     throw new Error('Worker not found');
   }
 
-  await Worker.deleteOne({ workerId });
+  await Worker.deleteOne({ _id: worker._id });
+
+  const linkedUser = await User.findOne(worker.userId ? { _id: worker.userId } : { workerId });
+  if (linkedUser) {
+    linkedUser.workerId = null;
+    await linkedUser.save();
+  }
 
   return {
     success: true,
