@@ -27,18 +27,13 @@
 
 import express from 'express';
 import authMiddleware from '../middleware/auth.js';
-import {
-  createEntry,
-  updateEntry,
-  deleteEntries,
-  getAllEntries,
-  getEntryById,
-  getAvailableSizes,
-  getInitData,
-} from '../controllers/workIssueControll.js';
+import { checkHelperPermission } from '../middleware/roleCheck.js';
+import { getInitData } from '../controllers/workIssueController.js';
+import { createEntry, deleteMultipleEntries, getAllEntries, getAvailableSizes, getEntryById, updateEntry } from '../services/workIssueService.js';
+
 
 const router = express.Router();
-const { protect, checkHelperPermission, authorize } = authMiddleware;
+const { protect, authorize} = authMiddleware;
 
 router.use(protect);
 
@@ -50,9 +45,9 @@ router.post('/', canWorker, createEntry);
 router.get('/', canWorker, getAllEntries);
 router.get('/:id', canWorker, getEntryById);
 router.put('/:id', canWorker, updateEntry);
-router.delete('/:id', canWorker, deleteEntries);
+// router.delete('/:id', canWorker, deleteEntries);
 
 // Bulk delete: only admin
-router.delete('/bulk', authorize('admin'), deleteEntries);
+router.delete('/bulk', authorize('admin'), deleteMultipleEntries);
 
 export default router;

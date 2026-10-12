@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import WorkerIssueEntry, { getSizesByProductType } from '../models/workIssueEntry.js';
+import WorkerIssueEntry, { getSizesByProductType } from '../models/workIssue.js';
 import Worker from '../models/worker.js';
 import Product from '../models/productEntry.js';
 import CuttingEntry from '../models/cuttingEntry.js';

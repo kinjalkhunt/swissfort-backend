@@ -6,6 +6,7 @@ import partyRoutes from './partyRoutes.js';
 import productRoutes from './productRoutes.js';
 import cuttingRoutes from './cuttingRoutes.js';
 import workerRoutes from './worker.js';
+import workIssueRoute from './workIssueRoutes.js'
 
 
 
@@ -18,5 +19,6 @@ indexRouter.use('/api', partyRoutes);
 indexRouter.use('/api/products', productRoutes);
 indexRouter.use('/api/cutting-entries', cuttingRoutes);
 indexRouter.use('/api/workers', workerRoutes);
+indexRouter.use('/api/worker-issue', workIssueRoute)
 
 export default indexRouter;

@@ -1,4 +1,4 @@
-import WorkerIssueService from '../services/workIssueEntry.js';
+import WorkerIssueService from '../services/workIssueService.js';
 
 const handleError = (error, res, next) => {
   if (
