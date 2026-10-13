@@ -28,12 +28,18 @@
 import express from 'express';
 import authMiddleware from '../middleware/auth.js';
 import { checkHelperPermission } from '../middleware/roleCheck.js';
-import { getInitData } from '../controllers/workIssueController.js';
-import { createEntry, deleteMultipleEntries, getAllEntries, getAvailableSizes, getEntryById, updateEntry } from '../services/workIssueService.js';
-
+import {
+  createEntry,
+  deleteMultipleEntries,
+  getAllEntries,
+  getAvailableSizes,
+  getEntryById,
+  getInitData,
+  updateEntry,
+} from '../controllers/workIssueController.js';
 
 const router = express.Router();
-const { protect, authorize} = authMiddleware;
+const { protect, authorize } = authMiddleware;
 
 router.use(protect);
 
